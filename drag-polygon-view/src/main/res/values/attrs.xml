@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="DragPolygonView">
+        <attr name="dpvStrokeWidth" format="float"/>
+        <attr name="dpvPointStrokeWidthMultiplier" format="float"/>
+        <attr name="dpvPointNormalColor" format="color"/>
+        <attr name="dpvPointPressedColor" format="color"/>
+        <attr name="dpvLineNormalColor" format="color"/>
+        <attr name="dpvLinePressedColor" format="color"/>
+        <attr name="dpvFillNormalColor" format="color"/>
+        <attr name="dpvFillPressedColor" format="color"/>
+        <attr name="dpvAllowableOffsets" format="dimension"/>
+        <attr name="dpvDragEnabled" format="boolean"/>
+        <attr name="dpvChangeAngleEnabled" format="boolean"/>
+    </declare-styleable>
+</resources>

@@ -1,0 +1,3 @@
+include ':drag-polygon-view'
+include ':app'
+rootProject.name = "DragPolygonView"
