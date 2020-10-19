@@ -5,12 +5,12 @@
 [![JitPack](https://jitpack.io/v/jenly1314/DragPolygonView.svg)](https://jitpack.io/#jenly1314/DragPolygonView)
 [![CI](https://travis-ci.org/jenly1314/DragPolygonView.svg?branch=master)](https://travis-ci.org/jenly1314/DragPolygonView)
 [![CircleCI](https://circleci.com/gh/jenly1314/DragPolygonView.svg?style=svg)](https://circleci.com/gh/jenly1314/DragPolygonView)
-[![API](https://img.shields.io/badge/API-16%2B-blue.svg?style=flat)](https://android-arsenal.com/api?level=16)
+[![API](https://img.shields.io/badge/API-21%2B-blue.svg?style=flat)](https://android-arsenal.com/api?level=21)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/mit-license.php)
 [![Blog](https://img.shields.io/badge/blog-Jenly-9933CC.svg)](https://jenly1314.github.io/)
 [![QQGroup](https://img.shields.io/badge/QQGroup-20867961-blue.svg)](http://shang.qq.com/wpa/qunwpa?idkey=8fcc6a2f88552ea44b1411582c94fd124f7bb3ec227e2a400dbbfaad3dc2f5ad)
 
-DragPolygonView for Android 是一个支持可拖动多边形，支持通过拖拽多边形的角改变其形状的任意多边形的自定义控件。
+DragPolygonView for Android 是一个支持可拖动多边形，支持通过拖拽多边形的角改变其形状的任意多边形控件。
 
 ## 特性说明
 - [x] 支持添加多个任意多边形
