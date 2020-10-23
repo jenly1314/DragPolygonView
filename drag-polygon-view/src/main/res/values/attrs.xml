@@ -5,12 +5,18 @@
         <attr name="dpvPointStrokeWidthMultiplier" format="float"/>
         <attr name="dpvPointNormalColor" format="color"/>
         <attr name="dpvPointPressedColor" format="color"/>
+        <attr name="dpvPointSelectedColor" format="color"/>
         <attr name="dpvLineNormalColor" format="color"/>
         <attr name="dpvLinePressedColor" format="color"/>
+        <attr name="dpvLineSelectedColor" format="color"/>
         <attr name="dpvFillNormalColor" format="color"/>
         <attr name="dpvFillPressedColor" format="color"/>
+        <attr name="dpvFillSelectedColor" format="color"/>
         <attr name="dpvAllowableOffsets" format="dimension"/>
         <attr name="dpvDragEnabled" format="boolean"/>
         <attr name="dpvChangeAngleEnabled" format="boolean"/>
+        <attr name="dpvMultipleSelection" format="boolean"/>
+        <attr name="dpvClickToggleSelected" format="boolean"/>
+        <attr name="dpvAllowDragOutView" format="boolean"/>
     </declare-styleable>
 </resources>

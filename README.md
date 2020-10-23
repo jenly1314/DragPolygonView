@@ -1,7 +1,7 @@
 # DragPolygonView
 
 [![Download](https://img.shields.io/badge/download-App-blue.svg)](https://raw.githubusercontent.com/jenly1314/DragPolygonView/master/app/release/app-release.apk)
-[![JCenter](https://img.shields.io/badge/JCenter-1.0.0-46C018.svg)](https://bintray.com/beta/#/jenly/maven/dragpolygonview)
+[![JCenter](https://img.shields.io/badge/JCenter-1.0.1-46C018.svg)](https://bintray.com/beta/#/jenly/maven/dragpolygonview)
 [![JitPack](https://jitpack.io/v/jenly1314/DragPolygonView.svg)](https://jitpack.io/#jenly1314/DragPolygonView)
 [![CI](https://travis-ci.org/jenly1314/DragPolygonView.svg?branch=master)](https://travis-ci.org/jenly1314/DragPolygonView)
 [![CircleCI](https://circleci.com/gh/jenly1314/DragPolygonView.svg?style=svg)](https://circleci.com/gh/jenly1314/DragPolygonView)
@@ -16,6 +16,8 @@ DragPolygonView for Android 是一个支持可拖动多边形，支持通过拖�
 - [x] 支持添加多个任意多边形
 - [x] 支持通过触摸多边形拖动改变其位置
 - [x] 支持通过触摸多边形的角改变其形状
+- [x] 支持点击、长按、改变等事件监听
+- [x] 支持多边形单选或多选模式
 
 ## Gif 展示
 ![Image](GIF.gif)
@@ -28,13 +30,19 @@ DragPolygonView for Android 是一个支持可拖动多边形，支持通过拖�
 | dpvPointStrokeWidthMultiplier | float | 1.0 | 绘制多边形点坐标时基于画笔描边的宽度倍数 |
 | dpvPointNormalColor | color |<font color=#E5574C>#FFE5574C</font>| 多边形点的颜色 |
 | dpvPointPressedColor | color | | 多边形点按下状态时的颜色 |
+| dpvPointSelectedColor | color | | 多边形点选中状态时的颜色 |
 | dpvLineNormalColor | color |<font color=#E5574C>#FFE5574C</font>| 多边形边线的颜色 |
 | dpvLinePressedColor | color | | 多边形边线按下状态的颜色 |
+| dpvLineSelectedColor | color | | 多边形边线选中状态的颜色 |
 | dpvFillNormalColor | color |<font color=#E5574C>#3FE5574C</font>| 多边形填充的颜色 |
 | dpvFillPressedColor | color |<font color=#E5574C>#7FE5574C</font>| 多边形填充按下状态时的颜色 |
+| dpvFillSelectedColor | color |<font color=#E5574C>#AFE5574C</font>| 多边形填充选中状态时的颜色 |
 | dpvAllowableOffsets | dimension | 16dp | 触点允许的误差偏移量 |
 | dpvDragEnabled | boolean | true | 是否启用拖动多边形 |
 | dpvChangeAngleEnabled | boolean | true | 是否启用多边形的各个角的角度支持可变 |
+| dpvMultipleSelection | boolean | false | 是否是多选模式，默认：单选模式 |
+| dpvClickToggleSelected | boolean | false | 是否点击就切换多边形的选中状态 |
+| dpvAllowDragOutView | boolean | false | 是否允许多边形拖出视图范围 |
 
 
 ## 引入
@@ -44,18 +52,18 @@ DragPolygonView for Android 是一个支持可拖动多边形，支持通过拖�
 <dependency>
   <groupId>com.king.view</groupId>
   <artifactId>dragpolygonview</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <type>pom</type>
 </dependency>
 ```
 ### Gradle:
 ```gradle
-implementation 'com.king.view:dragpolygonview:1.0.0'
+implementation 'com.king.view:dragpolygonview:1.0.1'
 ```
 
 ### Lvy:
 ```lvy
-<dependency org='com.king.view' name='dragpolygonview' rev='1.0.0'>
+<dependency org='com.king.view' name='dragpolygonview' rev='1.0.1'>
   <artifact name='$AID' ext='pom'></artifact>
 </dependency>
 ```
@@ -82,17 +90,27 @@ allprojects {
 代码示例
 ```Java
     //添加多边形
-    dragPolygonView.addPolygon(Polygon polygon)
+    dragPolygonView.addPolygon(Polygon polygon);
     //添加多边形(多边形的各个点)
-    dragPolygonView.addPolygon(PointF... points)
+    dragPolygonView.addPolygon(PointF... points);
+    //根据位置将多边形改为选中状态
+    dragPolygonView.setPolygonSelected(int position);
     //改变监听
     dragPolygonView.setOnChangeListener(OnChangeListener listener);
+    //点击监听
+    dragPolygonView.setOnPolygonClickListener(OnPolygonClickListener listener);
+    //长按监听
+    dragPolygonView.setOnPolygonLongClickListener(OnPolygonLongClickListener listener)
 
 ```
 
 更多使用详情，请查看[app](app)中的源码使用示例
 
 ## 版本记录
+
+#### v1.0.1：2020-10-23
+* 新增点击和长按事件
+* 新增选中相关状态
 
 #### v1.0.0：2020-10-19
 *  DragPolygonView初始版本

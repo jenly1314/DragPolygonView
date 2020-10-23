@@ -12,6 +12,8 @@ import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
+
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +25,9 @@ import java.util.List;
  * @author <a href="mailto:jenly1314@gmail.com">Jenly</a>
  */
 public class DragPolygonView extends View {
+
+
+    private static final int NONE = -1;
 
     /**
      * 多边形信息
@@ -53,6 +58,12 @@ public class DragPolygonView extends View {
      * 多边形点按下状态时的颜色
      */
     private int mPointPressedColor;
+
+    /**
+     * 多边形点选中状态时的颜色
+     */
+    private int mPointSelectedColor;
+
     /**
      * 多边形边线的颜色
      */
@@ -61,6 +72,11 @@ public class DragPolygonView extends View {
      * 多边形边线按下状态的颜色
      */
     private int mLinePressedColor;
+
+    /**
+     * 多边形边线选中状态的颜色
+     */
+    private int mLineSelectedColor;
     /**
      * 多边形填充的颜色
      */
@@ -71,14 +87,19 @@ public class DragPolygonView extends View {
     private int mFillPressedColor = 0x7FE5574C;
 
     /**
+     * 多边形填充选中状态时的颜色
+     */
+    private int mFillSelectedColor = 0xAFE5574C;
+
+    /**
      * 触摸多边形的当前索引
      */
-    private int mPolygonPosition = -1;
+    private int mPolygonPosition = NONE;
 
     /**
      * 触摸点的当前索引
      */
-    private int mEventPointIndex = -1;
+    private int mEventPointIndex = NONE;
 
     /**
      * 触摸事件点的X坐标
@@ -97,6 +118,15 @@ public class DragPolygonView extends View {
      * 最近一次点的Y坐标
      */
     private float mLastY;
+
+    /**
+     * 按下时点的X坐标
+     */
+    private float mDownX;
+    /**
+     * 按下时点的Y坐标
+     */
+    private float mDownY;
 
     /**
      * 触点允许的误差偏移量
@@ -122,12 +152,63 @@ public class DragPolygonView extends View {
      */
     private boolean isIntercept;
 
+    /**
+     * 改变监听器
+     */
     private OnChangeListener mOnChangeListener;
+    /**
+     * 点击监听器
+     */
+    private OnPolygonClickListener mOnPolygonClickListener;
+    /**
+     * 长按监听器
+     */
+    private OnPolygonLongClickListener mOnPolygonLongClickListener;
+
+    /**
+     * 是否运行长按事件
+     */
+    private boolean isLongClickRunnable;
+
+    /**
+     * 触摸可倾斜的距离，用于区分点击和滑动事件的临界点
+     */
+    private int mTouchSlop;
+
+    /**
+     * 长按超时时间（用于判定触发长按事件）
+     */
+    private int mLongPressTimeout;
+
+    /**
+     * 是否是点击事件
+     */
+    private boolean isClickEvent;
+
+    /**
+     * 是否是多选模式
+     */
+    private boolean isMultipleSelection;
+
+    /**
+     * 多边形选中位置
+     */
+    private int mPolygonSelectPosition = NONE;
+
+    /**
+     * 是否点击切换选中状态
+     */
+    private boolean isClickToggleSelected;
+
+    /**
+     * 是否允许多边形拖出视图范围
+     */
+    private boolean isAllowDragOutView;
 
 
     public DragPolygonView(Context context) {
         super(context);
-        initValue();
+        initDefaultValue(context);
     }
 
     public DragPolygonView(Context context, AttributeSet attrs) {
@@ -143,8 +224,10 @@ public class DragPolygonView extends View {
         init(context,attrs,defStyleAttr,defStyleRes);
     }
 
-    private void initValue(){
+    private void initDefaultValue(Context context){
         mPolygonList = new ArrayList<>();
+        mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        mLongPressTimeout = ViewConfiguration.getLongPressTimeout();
         mAllowableOffsets = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,16,getResources().getDisplayMetrics());
     }
 
@@ -156,7 +239,7 @@ public class DragPolygonView extends View {
      * @param defStyleRes
      */
     private void init(Context context,AttributeSet attrs, int defStyleAttr, int defStyleRes){
-        initValue();
+        initDefaultValue(context);
 
         final TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.DragPolygonView, defStyleAttr, defStyleRes);
         final int count = a.getIndexCount();
@@ -170,20 +253,32 @@ public class DragPolygonView extends View {
                 mPointNormalColor = a.getColor(attr,mPointNormalColor);
             }else if(attr == R.styleable.DragPolygonView_dpvPointPressedColor){
                 mPointPressedColor = a.getColor(attr,mPointPressedColor);
+            }else if(attr == R.styleable.DragPolygonView_dpvPointSelectedColor){
+                mPointSelectedColor = a.getColor(attr,mPointSelectedColor);
             }else if(attr == R.styleable.DragPolygonView_dpvLineNormalColor){
                 mLineNormalColor = a.getColor(attr,mLineNormalColor);
             }else if(attr == R.styleable.DragPolygonView_dpvLinePressedColor){
                 mLinePressedColor = a.getColor(attr,mLinePressedColor);
+            }else if(attr == R.styleable.DragPolygonView_dpvLineSelectedColor){
+                mLineSelectedColor = a.getColor(attr,mLineSelectedColor);
             }else if(attr == R.styleable.DragPolygonView_dpvFillNormalColor){
                 mFillNormalColor = a.getColor(attr,mFillNormalColor);
             }else if(attr == R.styleable.DragPolygonView_dpvFillPressedColor){
                 mFillPressedColor = a.getColor(attr,mFillPressedColor);
+            }else if(attr == R.styleable.DragPolygonView_dpvFillSelectedColor){
+                mFillSelectedColor = a.getColor(attr,mFillSelectedColor);
             }else if(attr == R.styleable.DragPolygonView_dpvAllowableOffsets){
                 mAllowableOffsets = a.getDimension(attr,mAllowableOffsets);
             }else if(attr == R.styleable.DragPolygonView_dpvDragEnabled){
                 isDragEnabled = a.getBoolean(attr,isDragEnabled);
             }else if(attr == R.styleable.DragPolygonView_dpvChangeAngleEnabled){
                 isChangeAngleEnabled = a.getBoolean(attr,isChangeAngleEnabled);
+            }else if(attr == R.styleable.DragPolygonView_dpvMultipleSelection){
+                isMultipleSelection = a.getBoolean(attr,isMultipleSelection);
+            }else if(attr == R.styleable.DragPolygonView_dpvClickToggleSelected){
+                isClickToggleSelected = a.getBoolean(attr,isClickToggleSelected);
+            }else if(attr == R.styleable.DragPolygonView_dpvAllowDragOutView){
+                isAllowDragOutView = a.getBoolean(attr,isAllowDragOutView);
             }
         }
         a.recycle();
@@ -206,8 +301,10 @@ public class DragPolygonView extends View {
         mPaint.setAntiAlias(true);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         int size = mPolygonList.size();
+        boolean isSelected;
         for(int i = 0; i < size; i++){
-            drawPolygon(canvas,mPolygonList.get(i).getPoints(),i == mPolygonPosition);
+            isSelected = isMultipleSelection ? mPolygonList.get(i).isSelected : i == mPolygonSelectPosition;
+            drawPolygon(canvas,mPolygonList.get(i).getPoints(),i == mPolygonPosition,isSelected);
         }
     }
 
@@ -215,7 +312,7 @@ public class DragPolygonView extends View {
      * 绘制多边形
      * @param canvas
      */
-    private void drawPolygon(Canvas canvas,PointF[] points,boolean isPressed){
+    private void drawPolygon(Canvas canvas,PointF[] points,boolean isPressed,boolean isSelected){
         if(points != null && points.length > 0){
             int size = points.length;
             float[] lines = new float[size << 1];
@@ -234,11 +331,11 @@ public class DragPolygonView extends View {
             path.close();
             //根据路径绘制区域
             mPaint.setStrokeWidth(mStrokeWidth);
-            mPaint.setColor(isPressed && mLinePressedColor != 0 ? mLinePressedColor : mLineNormalColor);
+            mPaint.setColor(obtainColor(isPressed,isSelected,mLineNormalColor,mLinePressedColor,mLineSelectedColor));
             mPaint.setStyle(Paint.Style.STROKE);
             canvas.drawPath(path,mPaint);
             //根据路径绘制区域填充
-            mPaint.setColor(isPressed && mFillPressedColor != 0 ? mFillPressedColor : mFillNormalColor);
+            mPaint.setColor(obtainColor(isPressed,isSelected,mFillNormalColor,mFillPressedColor,mFillSelectedColor));
             if(mPaint.getColor() != 0){
                 mPaint.setStyle(Paint.Style.FILL);
                 canvas.drawPath(path,mPaint);
@@ -247,13 +344,31 @@ public class DragPolygonView extends View {
             //绘制点
             if(mPointStrokeWidthMultiplier > 0){
                 mPaint.setStrokeWidth(mStrokeWidth * mPointStrokeWidthMultiplier);
-                mPaint.setColor(isPressed && mPointPressedColor != 0 ? mPointPressedColor : mPointNormalColor);
+                mPaint.setColor(obtainColor(isPressed,isSelected,mPointNormalColor,mPointPressedColor,mPointSelectedColor));
                 canvas.drawPoints(lines,mPaint);
             }
 
         }
     }
 
+    /**
+     * 获得颜色
+     * @param isPressed
+     * @param isSelected
+     * @param normalColor
+     * @param pressedColor
+     * @param selectedColor
+     * @return
+     */
+    private int obtainColor(boolean isPressed,boolean isSelected,int normalColor,int pressedColor,int selectedColor){
+        if(isPressed && pressedColor != 0){
+            return pressedColor;
+        }
+        if(isSelected && selectedColor != 0){
+            return selectedColor;
+        }
+        return normalColor;
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -262,25 +377,16 @@ public class DragPolygonView extends View {
         isIntercept = event.getPointerCount() == 1;
         switch (event.getAction()){
             case MotionEvent.ACTION_DOWN:
-                mLastX = mEventX;
-                mLastX = mEventY;
-                obtainCurrentPolygon(mEventX,mEventY);
+                isIntercept = handleDownEvent(mEventX,mEventY);
                 break;
             case MotionEvent.ACTION_MOVE:
                 if(isIntercept){
-                    isIntercept = handleMoveEvent();
+                    isIntercept = handleMoveEvent(mEventX,mEventY);
                 }
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                if(mPolygonPosition >= 0 && mOnChangeListener != null){
-                    mOnChangeListener.onStopTrackingTouch(mPolygonPosition);
-                }
-                mPolygonPosition = -1;
-                mEventPointIndex = -1;
-                isDragEvent = false;
-                isIntercept = false;
-                invalidate();
+                handleUpEvent(mEventX,mEventY);
                 break;
         }
         mLastX = mEventX;
@@ -288,8 +394,77 @@ public class DragPolygonView extends View {
         return isIntercept || super.onTouchEvent(event);
     }
 
-    private boolean handleMoveEvent(){
-        if(Math.sqrt(Math.abs(Math.pow(mEventX - mLastX,2) + Math.pow(mEventY - mLastY,2))) > 100){
+    private Runnable mLongClickRunnable = new Runnable() {
+        @Override
+        public void run() {
+            //如果执行了长按事件，则将点击事件忽略掉
+            isClickEvent = false;
+            if(mOnPolygonLongClickListener != null){
+                mOnPolygonLongClickListener.onPolygonLongClick(mPolygonPosition);
+            }
+        }
+    };
+
+    /**
+     * 处理手指触摸抬起事件
+     * @param eventX
+     * @param eventY
+     */
+    private void handleUpEvent(float eventX,float eventY){
+        if(mPolygonPosition >= 0){
+            if(isClickEvent){
+                double distance = Math.sqrt(Math.abs(Math.pow(eventX - mDownX,2) + Math.pow(eventY - mDownY,2)));
+                if(distance <= mTouchSlop){
+                    if(isClickToggleSelected){//如果点击自动切换选中状态
+                        if(isMultipleSelection){
+                            mPolygonList.get(mPolygonPosition).isSelected = !mPolygonList.get(mPolygonPosition).isSelected;
+                        }else{
+                            mPolygonSelectPosition = mPolygonSelectPosition != mPolygonPosition ? mPolygonPosition : NONE;
+                        }
+                    }
+                    if(mOnPolygonClickListener != null){
+                        mOnPolygonClickListener.onPolygonClick(mPolygonPosition);
+                    }
+                }
+                isClickEvent = false;
+            }
+            if(isLongClickRunnable){
+                removeCallbacks(mLongClickRunnable);
+                isLongClickRunnable = false;
+            }
+            if(mOnChangeListener != null){
+                mOnChangeListener.onStopTrackingTouch(mPolygonPosition);
+            }
+        }
+
+        mPolygonPosition = NONE;
+        mEventPointIndex = NONE;
+        isDragEvent = false;
+        isIntercept = false;
+        invalidate();
+    }
+
+    /**
+     * 处理手指触摸移动事件
+     * @param eventX
+     * @param eventY
+     * @return
+     */
+    private boolean handleMoveEvent(float eventX,float eventY){
+        if(isClickEvent || isLongClickRunnable){
+            double distance = Math.sqrt(Math.abs(Math.pow(eventX - mDownX,2) + Math.pow(eventY - mDownY,2)));
+            if(distance > mTouchSlop){//当触摸点与最初按下的点的距离超过一定的距离，则认为是移动事件，即非点击或长按事件
+                if(isClickEvent){
+                    isClickEvent = false;
+                }
+                if(isLongClickRunnable){
+                    removeCallbacks(mLongClickRunnable);
+                    isLongClickRunnable = false;
+                }
+            }
+        }
+
+        if(Math.sqrt(Math.abs(Math.pow(eventX - mLastX,2) + Math.pow(eventY - mLastY,2))) > 100){
             //如果两点之间的距离超过100则过滤掉，因为这可能是多点触控导致的触摸点坐标突变
             return false;
         }
@@ -297,31 +472,30 @@ public class DragPolygonView extends View {
             if(mEventPointIndex >= 0){//拖动点，改变多边形当前拖动的点坐标信息
                 if(isChangeAngleEnabled){
                     //根据触摸的点坐标更新X轴坐标信息
-                    float x;
-                    float y;
-                    if(mEventX < 0){
-                        x = 0;
-                    }else if(mEventX > getWidth()){
-                        x = getWidth();
-                    }else{
-                        x = mEventX;
+                    float newX = eventX;
+                    float newY= eventY;
+                    if(!isAllowDragOutView){
+                        if(eventX < 0){
+                            newX = 0;
+                        }else if(eventX > getWidth()){
+                            newX = getWidth();
+                        }
+                        //根据触摸的点坐标更新Y轴坐标信息
+                        if(eventY < 0){
+                            newY = 0;
+                        }else if(eventY > getHeight()){
+                            newY = getHeight();
+                        }
                     }
-                    //根据触摸的点坐标更新Y轴坐标信息
-                    if(mEventY < 0){
-                        y = 0;
-                    }else if(mEventY > getHeight()){
-                        y = getHeight();
-                    }else{
-                        y = mEventY;
-                    }
-                    mPolygonList.get(mPolygonPosition).updatePoint(x,y,mEventPointIndex);
+
+                    mPolygonList.get(mPolygonPosition).updatePoint(newX,newY,mEventPointIndex);
                     invalidate();
                     if(mOnChangeListener!= null){
                         mOnChangeListener.onChanged(mPolygonPosition,true);
                     }
                     return true;
                 }
-            }else if(isDragEvent && (Math.abs(mLastX - mEventX) > 1 || Math.abs(mLastY - mEventY) > 1)){//拖动多边形
+            }else if(isDragEvent && (Math.abs(mLastX - eventX) > 1 || Math.abs(mLastY - eventY) > 1)){//拖动多边形
                 updateDragPoints(mPolygonList.get(mPolygonPosition));
                 if(mOnChangeListener!= null){
                     mOnChangeListener.onChanged(mPolygonPosition,true);
@@ -333,32 +507,44 @@ public class DragPolygonView extends View {
     }
 
 
-    private synchronized void obtainCurrentPolygon(float x,float y){
+    /**
+     * 处理手指触摸按下事件
+     * @param eventX
+     * @param eventY
+     */
+    private boolean handleDownEvent(float eventX,float eventY){
+        mDownX = mLastX = eventX;
+        mDownY = mLastY = eventY;
         int size = mPolygonList.size();
         for(int i = size - 1; i >= 0; i--){
             if(isChangeAngleEnabled){
-                mEventPointIndex = obtainCurrentPointIndex(mPolygonList.get(i).getPoints(),x,y);
+                mEventPointIndex = obtainCurrentPointIndex(mPolygonList.get(i).getPoints(),eventX,eventY);
                 if(mEventPointIndex >= 0){
                     mPolygonPosition = i;
-                    isIntercept = true;
                     if(mOnChangeListener!= null){
                         mOnChangeListener.onStartTrackingTouch(i);
                     }
-                    break;
+                    return true;
                 }
             }
-            if(isDragEnabled && mEventPointIndex < 0){//如果触摸点小于0，则去检测是否符合拖动事件
-                isDragEvent = canDragEvent(mPolygonList.get(i).getPoints(),mEventX,mEventY);
+
+            if(mEventPointIndex < 0){//如果触摸点小于0，则去检测是否符合拖动事件
+                isDragEvent = canDragEvent(mPolygonList.get(i).getPoints(),eventX,eventY);
                 if(isDragEvent){
                     mPolygonPosition = i;
-                    isIntercept = true;
                     if(mOnChangeListener!= null){
                         mOnChangeListener.onStartTrackingTouch(i);
                     }
-                    break;
+                    isClickEvent = true;
+                    if(mOnPolygonLongClickListener != null){
+                        postDelayed(mLongClickRunnable,mLongPressTimeout);
+                        isLongClickRunnable = true;
+                    }
+                    return isDragEnabled;
                 }
             }
         }
+        return false;
     }
 
     /**
@@ -376,7 +562,7 @@ public class DragPolygonView extends View {
             }
         }
 
-        return -1;
+        return NONE;
     }
 
     /**
@@ -434,28 +620,34 @@ public class DragPolygonView extends View {
             int size = points.length;
             boolean isMoveX = true;
             boolean isMoveY = true;
-            for(int i = 0; i < size; i++){
-                //通过遍历判定X轴坐标点是否碰碰撞的左右的边界
-                if(polygon.getLeftMostPoint().x + moveX < 0 || polygon.getRightMostPoint().x + moveX > getWidth()){
-                    isMoveX = false;
-                }
-                //通过遍历判定Y轴坐标点是否碰碰撞到上下的边界
-                if(polygon.getTopMostPoint().y + moveY < 0 || polygon.getBottomMostPoint().y + moveY > getHeight()){
-                    isMoveY = false;
-                }
-                //如果两边都有碰撞到边界，则直接返回
-                if(!(isMoveX || isMoveY)){
-                    return;
+            if(!isAllowDragOutView) {//如果允许拖出视图以外，则进行判断是否有点超出了四个边界
+                for (int i = 0; i < size; i++) {
+                    //通过遍历判定X轴坐标点是否碰碰撞的左右的边界
+                    if (moveX > 0 && polygon.getRightMostPoint().x + moveX > getWidth()) { //向右边移动
+                        isMoveX = false;
+                    } else if (moveX < 0 && polygon.getLeftMostPoint().x + moveX < 0) {//向左移动
+                        isMoveX = false;
+                    }
+                    //通过遍历判定Y轴坐标点是否碰碰撞到上下的边界
+                    if (moveY > 0 && polygon.getBottomMostPoint().y + moveY > getHeight()) {//向下移动
+                        isMoveY = false;
+                    } else if (moveY < 0 && polygon.getTopMostPoint().y + moveY < 0) {//向上移动
+                        isMoveY = false;
+                    }
+                    //如果经过判定X,Y轴都无法移动，则直接返回
+                    if (!(isMoveX || isMoveY)) {
+                        return;
+                    }
                 }
             }
-            //只要有一遍没有碰撞到边界，就可以拖动
+            //只要有一边没有碰撞到边界，就可以拖动
             if(isMoveX || isMoveY){
                 for(int i = 0; i < size; i++){
                     if(isMoveX)
                         points[i].x += moveX;
-                   if(isMoveY)
-                       points[i].y += moveY;
-                       polygon.updatePoint(points[i],i);
+                    if(isMoveY)
+                        points[i].y += moveY;
+                    polygon.updatePoint(points[i],i);
                 }
                 invalidate();
             }
@@ -501,8 +693,13 @@ public class DragPolygonView extends View {
      * @param position
      */
     public void removePolygon(int position){
-        if(position < mPolygonList.size()){
+        if(position >= 0 && position < mPolygonList.size()){
             mPolygonList.remove(position);
+            if(mPolygonSelectPosition == position){
+                mPolygonSelectPosition = NONE;
+            }else if(mPolygonSelectPosition > position){
+                mPolygonSelectPosition--;
+            }
             invalidate();
         }
     }
@@ -512,8 +709,18 @@ public class DragPolygonView extends View {
      * @param polygon
      */
     public void removePolygon(Polygon polygon){
-        mPolygonList.remove(polygon);
-        invalidate();
+        if(mPolygonSelectPosition >= 0){//如果有选中状态的多边形，在移除多边形的同时，需同步多边形选中的位置
+            int size = mPolygonList.size();
+            for(int i = 0; i < size; i++){
+                if(mPolygonList.get(i).equals(polygon)){
+                    removePolygon(i);
+                    break;
+                }
+            }
+        }else{
+            mPolygonList.remove(polygon);
+            invalidate();
+        }
     }
 
     /**
@@ -521,7 +728,23 @@ public class DragPolygonView extends View {
      * @param polygons
      */
     public void removePolygon(Collection<Polygon> polygons){
-        mPolygonList.remove(polygons);
+        if(mPolygonSelectPosition >= 0){//如果有选中状态的多边形，在移除多边形的同时，需同步多边形选中的位置
+            int size = mPolygonList.size();
+            for(Polygon polygon: polygons){
+                for(int i = 0; i < size; i++){
+                    if(mPolygonList.get(i).equals(polygon)){
+                        if(mPolygonSelectPosition == i){
+                            mPolygonSelectPosition = NONE;
+                        }else if(mPolygonSelectPosition > i){
+                            mPolygonSelectPosition--;
+                        }
+                        break;
+                    }
+                }
+            }
+        }else{
+            mPolygonList.remove(polygons);
+        }
         invalidate();
     }
 
@@ -530,6 +753,7 @@ public class DragPolygonView extends View {
      */
     public void clearPolygon(){
         mPolygonList.clear();
+        mPolygonSelectPosition = NONE;
         invalidate();
     }
 
@@ -560,12 +784,148 @@ public class DragPolygonView extends View {
      */
     public void setPolygon(int position, Polygon polygon){
         if(position < mPolygonList.size()){
+            polygon.isSelected = mPolygonList.get(position).isSelected;
             mPolygonList.set(position,polygon);
             invalidate();
             if(mOnChangeListener != null){
                 mOnChangeListener.onChanged(position,false);
             }
         }
+    }
+
+    /**
+     * 根据位置判断当前多边形是否是选中状态
+     * @param position
+     * @return
+     */
+    public boolean isPolygonSelected(int position){
+        if(position >= 0 && position < mPolygonList.size()){
+            if(isMultipleSelection){
+                return mPolygonList.get(position).isSelected;
+            }
+            return mPolygonSelectPosition == position;
+        }
+        return false;
+    }
+
+    /**
+     * 根据位置设置选中的多边形，这个方法主要用于单选模式
+     * 同时也兼容多选模式，如果当前是多选模式，则相当于{@link #addPolygonSelected(int...)}
+     * @param position
+     */
+    public void setPolygonSelected(int position){
+        if(position >= 0 && position < mPolygonList.size()){
+            if(isMultipleSelection){
+                mPolygonList.get(position).isSelected = true;
+            }else{
+                mPolygonSelectPosition = position;
+            }
+            invalidate();
+        }
+    }
+
+    /**
+     * 添加多边形的选中状态，这个方法主要用于多选模式时使用
+     * 同时也兼容单选模式，如果当前是单选模式，则相当于选中当前位置，当前位置取{@code positions}的第0位
+     * @param positions
+     */
+    public void addPolygonSelected(int... positions){
+        updatePolygonSelectedPosition(true,positions);
+    }
+
+    /**
+     * 移除多边形的选中状态，这个方法主要用于多选模式时使用
+     * 同时也兼容单选模式，如果当前是单选模式，则相当于选中当前位置，当前位置取{@code positions}的第0位
+     * @param positions
+     */
+    public void removePolygonSelected(int... positions){
+        updatePolygonSelectedPosition(false,positions);
+    }
+
+
+    /**
+     * 设置所有多边形的选中状态
+     * 不管是单选模式还是多选模式，都可以使用此方法来改变多边形的选中状态
+     * @param selected 是否选中
+     */
+    public void setPolygonSelectedAll(boolean selected){
+        int size = mPolygonList.size();
+        if(size > 0){
+            if(isMultipleSelection){
+                for(int i = 0; i < size; i++){
+                    mPolygonList.get(i).isSelected = selected;
+                }
+            }else{
+                //如果是单选，当状态为选中时，则只能选中第0位多边形
+                mPolygonSelectPosition = selected ? 0 : NONE;
+            }
+            invalidate();
+        }
+
+    }
+
+    /**
+     * 根据多边形的位置更新多边形是否选中状态
+     * @param selected 是否选中
+     * @param positions
+     */
+    private void updatePolygonSelectedPosition(boolean selected,int... positions){
+        int length = positions.length;
+        if(length > 0){
+            if(isMultipleSelection){
+                int size = mPolygonList.size();
+                if(size > 0){
+                    int position;
+                    for(int i = 0; i < length; i++){
+                        position = positions[i];
+                        if(position >= 0 && position < size){
+                            mPolygonList.get(position).isSelected = selected;
+                        }
+                    }
+                }
+            }else if(positions[0] >= 0 && positions[0] < mPolygonList.size()){//如果是单选，则只取第0个
+                mPolygonSelectPosition = selected ? positions[0] : NONE;
+            }
+            invalidate();
+        }
+    }
+
+    /**
+     * 获取选中的位置，这个方法主要用于单选模式
+     * 同时也兼容多选模式，如果当前是多选模式，则遍历返回选中的位置索引最小的
+     * @return
+     */
+    public int getPolygonSelectedPosition(){
+        if(isMultipleSelection){
+            int size = mPolygonList.size();
+            for(int i = 0; i < size; i++){
+                if(mPolygonList.get(i).isSelected){
+                    return i;
+                }
+            }
+        }
+        return mPolygonSelectPosition;
+    }
+
+    /**
+     * 获取选中的位置集合，这个方法主要用于多选模式
+     * 同时也兼容单选模式，如果当前是单选模式，如果有选中的多边形，则取返回集合的第0个
+     * @return
+     */
+    public List<Integer> getPolygonSelectPositions(){
+        List<Integer> list = new ArrayList<>();
+        if(isMultipleSelection){//如果是多选模式
+            int size = mPolygonList.size();
+            for(int i = 0; i < size; i++){
+                if(mPolygonList.get(i).isSelected){
+                    list.add(i);
+                }
+            }
+        }else if(mPolygonSelectPosition >= 0){//如果是单选模式
+            list.add(mPolygonSelectPosition);
+        }
+
+        return list;
     }
 
     /**
@@ -614,6 +974,14 @@ public class DragPolygonView extends View {
     }
 
     /**
+     * 设置多边形点选中状态时的颜色
+     */
+    public void setPointSelectedColor(int pointSelectedColor) {
+        this.mPointPressedColor = pointSelectedColor;
+        invalidate();
+    }
+
+    /**
      * 设置多边形边线的颜色
      */
     public void setLineNormalColor(int lineNormalColor) {
@@ -629,6 +997,14 @@ public class DragPolygonView extends View {
     }
 
     /**
+     * 设置多边形边线选中状态的颜色
+     */
+    public void setLineSelectedColor(int lineSelectedColor) {
+        this.mLineSelectedColor = lineSelectedColor;
+        invalidate();
+    }
+
+    /**
      * 设置多边形填充的颜色
      */
     public void setFillNormalColor(int fillNormalColor) {
@@ -641,6 +1017,14 @@ public class DragPolygonView extends View {
      */
     public void setFillPressedColor(int fillPressedColor) {
         this.mFillPressedColor = fillPressedColor;
+    }
+
+    /**
+     * 设置多边形填充按下状态时的颜色
+     */
+    public void setFillSelectedColor(int fillSelectedColor) {
+        this.mFillSelectedColor = fillSelectedColor;
+        invalidate();
     }
 
     /**
@@ -686,6 +1070,53 @@ public class DragPolygonView extends View {
     }
 
     /**
+     * 是否是多选模式
+     * @return
+     */
+    public boolean isMultipleSelection() {
+        return isMultipleSelection;
+    }
+
+    /**
+     * 设置是否是多选模式
+     * @param multipleSelection
+     */
+    public void setMultipleSelection(boolean multipleSelection) {
+        isMultipleSelection = multipleSelection;
+    }
+
+    /**
+     * 是否点击改变选择状态
+     */
+    public boolean isClickToggleSelected() {
+        return isClickToggleSelected;
+    }
+
+    /**
+     * 设置是否点击改变选择状态
+     * @param clickToggleSelected
+     */
+    public void setClickToggleSelected(boolean clickToggleSelected) {
+        isClickToggleSelected = clickToggleSelected;
+    }
+
+    /**
+     * 是否允许多边形拖出视图范围
+     * @return
+     */
+    public boolean isAllowDragOutView() {
+        return isAllowDragOutView;
+    }
+
+    /**
+     * 设置是否允许多边形拖出视图范围
+     * @param allowDragOutView
+     */
+    public void setAllowDragOutView(boolean allowDragOutView) {
+        isAllowDragOutView = allowDragOutView;
+    }
+
+    /**
      * 设置改变监听
      * @param listener
      */
@@ -703,12 +1134,50 @@ public class DragPolygonView extends View {
     }
 
     /**
+     * 设置点击多边形监听
+     * @param listener
+     */
+    public void setOnPolygonClickListener(OnPolygonClickListener listener){
+        this.mOnPolygonClickListener = listener;
+    }
+
+    /**
+     * 多边形点击监听
+     */
+    public interface OnPolygonClickListener{
+        void onPolygonClick(int position);
+    }
+
+
+    /**
+     * 设置长按多边形监听
+     * @param listener
+     */
+    public void setOnPolygonLongClickListener(OnPolygonLongClickListener listener){
+        this.mOnPolygonLongClickListener = listener;
+    }
+
+    /**
+     * 多边形长按监听
+     */
+    public interface OnPolygonLongClickListener{
+        void onPolygonLongClick(int position);
+    }
+
+
+    /**
      * 多边形对象
      */
     public static class Polygon implements Parcelable {
 
+        /**
+         * 多边形的点坐标数组
+         */
         private PointF[] mPoints;
 
+        /**
+         * 多边形的点的数量
+         */
         private int size;
 
         /**
@@ -731,20 +1200,24 @@ public class DragPolygonView extends View {
         /**
          * 最左边的点坐标信息索引
          */
-        private int mLeftMostPointIndex = -1;
+        private int mLeftMostPointIndex = NONE;
         /**
          * 最上边的点坐标信息索引
          */
-        private int mTopMostPointIndex = -1;
+        private int mTopMostPointIndex = NONE;
         /**
          * 最右边的点坐标信息索引
          */
-        private int mRightMostPointIndex = -1;
+        private int mRightMostPointIndex = NONE;
         /**
          * 最下边的点坐标信息索引
          */
-        private int mBottomMostPointIndex = -1;
+        private int mBottomMostPointIndex = NONE;
 
+        /**
+         * 多选时，用于标记是否选中，仅供内部使用
+         */
+        boolean isSelected;
 
         /**
          * 构造
@@ -805,7 +1278,6 @@ public class DragPolygonView extends View {
             return mBottomMostPoint;
         }
 
-
         /**
          * 获取最左边的点坐标信息索引
          */
@@ -846,7 +1318,7 @@ public class DragPolygonView extends View {
                     updateBoundaryPoints(points[i],i);
                 }
             }else{
-                mLeftMostPointIndex = mRightMostPointIndex = mTopMostPointIndex = mBottomMostPointIndex = -1;
+                mLeftMostPointIndex = mRightMostPointIndex = mTopMostPointIndex = mBottomMostPointIndex = NONE;
             }
         }
 
@@ -911,6 +1383,12 @@ public class DragPolygonView extends View {
             }
         }
 
+        /**
+         * 更新某个点的坐标信息
+         * @param x
+         * @param y
+         * @param position
+         */
         public void updatePoint(float x,float y,int position){
             if(position < size){
                 mPoints[position].x = x;
