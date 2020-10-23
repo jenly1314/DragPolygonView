@@ -22,7 +22,6 @@ DragPolygonView for Android 是一个支持可拖动多边形，支持通过拖�
 ## Gif 展示
 ![Image](GIF.gif)
 
-
 ## DragPolygonView 自定义属性说明
 | 属性 | 值类型 | 默认值 | 说明 |
 | :------| :------ | :------ | :------ |
