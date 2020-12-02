@@ -18,5 +18,11 @@
         <attr name="dpvMultipleSelection" format="boolean"/>
         <attr name="dpvClickToggleSelected" format="boolean"/>
         <attr name="dpvAllowDragOutView" format="boolean"/>
+        <attr name="dpvTextSize" format="dimension"/>
+        <attr name="dpvTextNormalColor" format="color"/>
+        <attr name="dpvTextPressedColor" format="color"/>
+        <attr name="dpvTextSelectedColor" format="color"/>
+        <attr name="dpvShowText" format="boolean"/>
+        <attr name="dpvFakeBoldText" format="boolean"/>
     </declare-styleable>
 </resources>

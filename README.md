@@ -1,7 +1,7 @@
 # DragPolygonView
 
 [![Download](https://img.shields.io/badge/download-App-blue.svg)](https://raw.githubusercontent.com/jenly1314/DragPolygonView/master/app/release/app-release.apk)
-[![JCenter](https://img.shields.io/badge/JCenter-1.0.1-46C018.svg)](https://bintray.com/beta/#/jenly/maven/dragpolygonview)
+[![JCenter](https://img.shields.io/badge/JCenter-1.0.2-46C018.svg)](https://bintray.com/beta/#/jenly/maven/dragpolygonview)
 [![JitPack](https://jitpack.io/v/jenly1314/DragPolygonView.svg)](https://jitpack.io/#jenly1314/DragPolygonView)
 [![CI](https://travis-ci.org/jenly1314/DragPolygonView.svg?branch=master)](https://travis-ci.org/jenly1314/DragPolygonView)
 [![CircleCI](https://circleci.com/gh/jenly1314/DragPolygonView.svg?style=svg)](https://circleci.com/gh/jenly1314/DragPolygonView)
@@ -42,6 +42,12 @@ DragPolygonView for Android 是一个支持可拖动多边形，支持通过拖�
 | dpvMultipleSelection | boolean | false | 是否是多选模式，默认：单选模式 |
 | dpvClickToggleSelected | boolean | false | 是否点击就切换多边形的选中状态 |
 | dpvAllowDragOutView | boolean | false | 是否允许多边形拖出视图范围 |
+| dpvTextSize | dimension | 16sp | 是否允许多边形拖出视图范围 |
+| dpvTextNormalColor | color |<font color=#E5574C>#FFE5574C</font>| 多边形文本的颜色 |
+| dpvTextPressedColor | color | | 多边形文本按下状态的颜色 |
+| dpvTextSelectedColor | color | | 多边形文本选中状态的颜色 |
+| dpvShowText | boolean | true | 是否显示多边形的文本 |
+| dpvFakeBoldText | boolean | false | 多边形Text的字体是否为粗体 |
 
 
 ## 引入
@@ -51,18 +57,18 @@ DragPolygonView for Android 是一个支持可拖动多边形，支持通过拖�
 <dependency>
   <groupId>com.king.view</groupId>
   <artifactId>dragpolygonview</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <type>pom</type>
 </dependency>
 ```
 ### Gradle:
 ```gradle
-implementation 'com.king.view:dragpolygonview:1.0.1'
+implementation 'com.king.view:dragpolygonview:1.0.2'
 ```
 
 ### Lvy:
 ```lvy
-<dependency org='com.king.view' name='dragpolygonview' rev='1.0.1'>
+<dependency org='com.king.view' name='dragpolygonview' rev='1.0.2'>
   <artifact name='$AID' ext='pom'></artifact>
 </dependency>
 ```
@@ -106,6 +112,9 @@ allprojects {
 更多使用详情，请查看[app](app)中的源码使用示例
 
 ## 版本记录
+
+#### v1.0.2：2020-12-2
+* Polygon新增Text属性（可显示在多边形中间）
 
 #### v1.0.1：2020-10-23
 * 新增点击和长按事件

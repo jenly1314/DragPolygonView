@@ -8,7 +8,9 @@ import android.graphics.Path;
 import android.graphics.PointF;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
@@ -205,10 +207,39 @@ public class DragPolygonView extends View {
      */
     private boolean isAllowDragOutView;
 
+    /**
+     * 文本字体大小
+     */
+    private float mTextSize;
+
+    /**
+     * 文本的颜色
+     */
+    private int mTextNormalColor = 0xFFE5574C;
+
+    /**
+     * 文本按下状态的颜色
+     */
+    private int mTextPressedColor;
+
+    /**
+     * 文本选中状态的颜色
+     */
+    private int mTextSelectedColor;
+
+    /**
+     * 是否显示多边形的Text
+     */
+    private boolean isShowText = true;
+
+    /**
+     * 多边形Text的字体是否为粗体
+     */
+    private boolean isFakeBoldText = false;
+
 
     public DragPolygonView(Context context) {
-        super(context);
-        initDefaultValue(context);
+        this(context, null);
     }
 
     public DragPolygonView(Context context, AttributeSet attrs) {
@@ -229,6 +260,7 @@ public class DragPolygonView extends View {
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         mLongPressTimeout = ViewConfiguration.getLongPressTimeout();
         mAllowableOffsets = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,16,getResources().getDisplayMetrics());
+        mTextSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP,16,getResources().getDisplayMetrics());
     }
 
     /**
@@ -279,6 +311,18 @@ public class DragPolygonView extends View {
                 isClickToggleSelected = a.getBoolean(attr,isClickToggleSelected);
             }else if(attr == R.styleable.DragPolygonView_dpvAllowDragOutView){
                 isAllowDragOutView = a.getBoolean(attr,isAllowDragOutView);
+            }else if(attr == R.styleable.DragPolygonView_dpvTextSize){
+                mTextSize = a.getDimension(attr,mTextSize);
+            }else if(attr == R.styleable.DragPolygonView_dpvTextNormalColor){
+                mTextNormalColor = a.getColor(attr,mTextNormalColor);
+            }else if(attr == R.styleable.DragPolygonView_dpvTextPressedColor){
+                mTextPressedColor = a.getColor(attr,mTextPressedColor);
+            }else if(attr == R.styleable.DragPolygonView_dpvTextSelectedColor){
+                mTextSelectedColor = a.getColor(attr,mTextSelectedColor);
+            }else if(attr == R.styleable.DragPolygonView_dpvShowText){
+                isShowText = a.getBoolean(attr,isShowText);
+            }else if(attr == R.styleable.DragPolygonView_dpvFakeBoldText){
+                isFakeBoldText = a.getBoolean(attr,isFakeBoldText);
             }
         }
         a.recycle();
@@ -304,7 +348,7 @@ public class DragPolygonView extends View {
         boolean isSelected;
         for(int i = 0; i < size; i++){
             isSelected = isMultipleSelection ? mPolygonList.get(i).isSelected : i == mPolygonSelectPosition;
-            drawPolygon(canvas,mPolygonList.get(i).getPoints(),i == mPolygonPosition,isSelected);
+            drawPolygon(canvas,mPolygonList.get(i),i == mPolygonPosition,isSelected);
         }
     }
 
@@ -312,7 +356,8 @@ public class DragPolygonView extends View {
      * 绘制多边形
      * @param canvas
      */
-    private void drawPolygon(Canvas canvas,PointF[] points,boolean isPressed,boolean isSelected){
+    private void drawPolygon(Canvas canvas,Polygon polygon,boolean isPressed,boolean isSelected){
+        PointF[] points = polygon.getPoints();
         if(points != null && points.length > 0){
             int size = points.length;
             float[] lines = new float[size << 1];
@@ -348,6 +393,20 @@ public class DragPolygonView extends View {
                 canvas.drawPoints(lines,mPaint);
             }
 
+            //绘制Text
+            if(isShowText && !TextUtils.isEmpty(polygon.getText())){
+                mPaint.setStyle(Paint.Style.FILL);
+                mPaint.setFakeBoldText(isFakeBoldText);
+                mPaint.setTextSize(mTextSize);
+                mPaint.setColor(obtainColor(isPressed,isSelected,mTextNormalColor,mTextPressedColor,mTextSelectedColor));
+                mPaint.setTextAlign(Paint.Align.CENTER);
+                Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
+                float distance = (fontMetrics.bottom - fontMetrics.top)/2 - fontMetrics.bottom;
+                float centerX = (polygon.getLeftMostPoint().x + polygon.getRightMostPoint().x) / 2;
+                float centerY = (polygon.getTopMostPoint().y + polygon.getBottomMostPoint().y) / 2 + distance;
+                canvas.drawText(polygon.getText(),centerX,centerY,mPaint);
+            }
+
         }
     }
 
@@ -374,6 +433,7 @@ public class DragPolygonView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         mEventX = event.getX();
         mEventY = event.getY();
+        Log.d("Jenly",mEventX +" , " + mEventY);
         isIntercept = event.getPointerCount() == 1;
         switch (event.getAction()){
             case MotionEvent.ACTION_DOWN:
@@ -1028,6 +1088,59 @@ public class DragPolygonView extends View {
     }
 
     /**
+     * 设置文本字体大小
+     * @param textSize
+     */
+    public void setTextSize(float textSize) {
+        this.mTextSize = textSize;
+        invalidate();
+    }
+
+    /**
+     * 设置文本的颜色
+     * @param textNormalColor
+     */
+    public void setTextNormalColor(int textNormalColor) {
+        this.mTextNormalColor = textNormalColor;
+        invalidate();
+    }
+
+    /**
+     * 设置文本按下状态的颜色
+     * @param textPressedColor
+     */
+    public void setTextPressedColor(int textPressedColor) {
+        this.mTextPressedColor = textPressedColor;
+    }
+
+    /**
+     * 设置文本选中状态的颜色
+     * @param textSelectedColor
+     */
+    public void setTextSelectedColor(int textSelectedColor) {
+        this.mTextSelectedColor = textSelectedColor;
+        invalidate();
+    }
+
+    /**
+     * 设置是否显示多边形的Text
+     * @param showText
+     */
+    public void setShowText(boolean showText) {
+        isShowText = showText;
+        invalidate();
+    }
+
+    /**
+     * 设置多边形Text的字体是否为粗体
+     * @param fakeBoldText
+     */
+    public void setFakeBoldText(boolean fakeBoldText) {
+        isFakeBoldText = fakeBoldText;
+        invalidate();
+    }
+
+    /**
      * 设置允许的触点误差偏移量
      */
     public void setAllowableOffsets(float allowableOffsets) {
@@ -1219,6 +1332,8 @@ public class DragPolygonView extends View {
          */
         boolean isSelected;
 
+        private String mText;
+
         /**
          * 构造
          * @param left   矩形左边的X坐标
@@ -1308,6 +1423,13 @@ public class DragPolygonView extends View {
 
         /**
          * 更新边界点（分别是最左，最右，最上，最下的点坐标信息）
+         */
+        private void updateBoundaryPoints(){
+            updateBoundaryPoints(mPoints);
+        }
+
+        /**
+         * 更新边界点（分别是最左，最右，最上，最下的点坐标信息）
          * @param points
          */
         private synchronized void updateBoundaryPoints(PointF[] points){
@@ -1345,6 +1467,7 @@ public class DragPolygonView extends View {
             }
         }
 
+
         /**
          * 设置多边形坐标点信息，设置时，请确保至少三个点以上才能组成一个多边形
          * @param points
@@ -1352,7 +1475,7 @@ public class DragPolygonView extends View {
         public void setPoints(PointF... points){
             mPoints = points;
             size = mPoints.length;
-            updateBoundaryPoints(points);
+            updateBoundaryPoints();
         }
 
         /**
@@ -1379,7 +1502,7 @@ public class DragPolygonView extends View {
         public void updatePoint(PointF point,int position){
             if(position < size){
                 mPoints[position] = point;
-                updateBoundaryPoints(point,position);
+                updateBoundaryPoints();
             }
         }
 
@@ -1393,8 +1516,16 @@ public class DragPolygonView extends View {
             if(position < size){
                 mPoints[position].x = x;
                 mPoints[position].y = y;
-                updateBoundaryPoints(mPoints[position],position);
+                updateBoundaryPoints();
             }
+        }
+
+        public void setText(String text){
+            this.mText = text;
+        }
+
+        public String getText(){
+            return mText;
         }
 
 
@@ -1423,6 +1554,7 @@ public class DragPolygonView extends View {
             dest.writeInt(this.mTopMostPointIndex);
             dest.writeInt(this.mRightMostPointIndex);
             dest.writeInt(this.mBottomMostPointIndex);
+            dest.writeString(this.mText);
         }
 
         protected Polygon(Parcel in) {
@@ -1436,6 +1568,7 @@ public class DragPolygonView extends View {
             this.mTopMostPointIndex = in.readInt();
             this.mRightMostPointIndex = in.readInt();
             this.mBottomMostPointIndex = in.readInt();
+            this.mText = in.readString();
         }
 
         public static final Creator<Polygon> CREATOR = new Creator<Polygon>() {
